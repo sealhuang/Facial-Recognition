@@ -1,3 +1,6 @@
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# vi: set ft=python sts=4 ts=4 sw=4 et:
+
 import numpy as np
 import h5py
 import os
@@ -16,7 +19,7 @@ def printout(flog, data):
     flog.write(data + '\n')
 
 # main
-base_dir = '/home/user/kaichun/cs221/'
+base_dir = '/Users/sealhuang/repo/Facial-Recognition'
 dataset_dir = os.path.join(base_dir, 'data_hdf5')
 
 FILE_LIST = os.path.join(dataset_dir, 'training_file_list.txt')
@@ -26,7 +29,8 @@ images = np.zeros((0, image_size, image_size), dtype=np.float32)
 
 file_list = getDataFiles(FILE_LIST)
 for fn in file_list:
-    data, _ = load_h5(fn)
+    hfile = os.path.join(dataset_dir, fn)
+    data, _ = load_h5(hfile)
     images = np.concatenate((images, np.float32(data)), axis=0)
 
 image_mean = np.mean(images, axis=0)

@@ -1,3 +1,6 @@
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# vi: set ft=python sts=4 ts=4 sw=4 et:
+
 import csv
 import os
 import h5py
@@ -21,21 +24,24 @@ train_test_split = ['PublicTest', 'Training', 'PrivateTest']
 
 print 'Loading data ...'
 labels = np.array([np.uint8(row[0]) for row in rows]).astype(np.uint8)
-images = np.array([np.reshape(np.array(row[1].split(), dtype=np.uint8), [size, size]) \
-        for row in rows]).astype(np.uint8)
+images = np.array([np.reshape(np.array(row[1].split(), dtype=np.uint8),
+                              [size, size])
+                   for row in rows]).astype(np.uint8)
 usages = [row[2] for row in rows]
 print 'Data loaded.'
 
 total_data = len(usages)
 
-train_indices = [idx for idx in range(total_data) if usages[idx] == 'Training']
-val_indices = [idx for idx in range(total_data) if usages[idx] == 'PublicTest']
-test_indices = [idx for idx in range(total_data) if usages[idx] == 'PrivateTest']
+train_indices = [idx for idx in range(total_data) if usages[idx]=='Training']
+val_indices = [idx for idx in range(total_data) if usages[idx]=='PublicTest']
+test_indices = [idx for idx in range(total_data) if usages[idx]=='PrivateTest']
 
 def save_h5(h5_filename, data, label, data_dtype='uint8', label_dtype='uint8'):
     h5_fout = h5py.File(h5_filename)
-    h5_fout.create_dataset('data', data=data, compression='gzip', compression_opts=4, dtype=data_dtype)
-    h5_fout.create_dataset('label', data=label, compression='gzip', compression_opts=1, dtype=label_dtype)
+    h5_fout.create_dataset('data', data=data, compression='gzip',
+                           compression_opts=4, dtype=data_dtype)
+    h5_fout.create_dataset('label', data=label, compression='gzip',
+                           compression_opts=1, dtype=label_dtype)
     h5_fout.close()
 
 def generate_hdf5(data, label, out_path):
@@ -47,14 +53,19 @@ def generate_hdf5(data, label, out_path):
         data_res[idx % h5_batch_size, ...] = data[idx, ...]
         label_res[idx % h5_batch_size] = label[idx]
         if (idx + 1) % h5_batch_size == 0 or idx + 1 == num_data:
-            save_h5(out_path + '_' + str(count) + '.h5', data_res[:idx % h5_batch_size+1], label_res[:idx % h5_batch_size+1])
+            save_h5(out_path + '_' + str(count) + '.h5',
+                    data_res[:idx % h5_batch_size+1],
+                    label_res[:idx % h5_batch_size+1])
             print '\t Dumping data to ', out_path + '_' + str(count) + '.h5'
             count += 1
 
 print 'Generating training hdf5 files ...'
-generate_hdf5(images[train_indices, ...], labels[train_indices], os.path.join(out_dir, 'train'))
+generate_hdf5(images[train_indices, ...], labels[train_indices],
+              os.path.join(out_dir, 'train'))
 print 'Generating validation hdf5 files ...'
-generate_hdf5(images[val_indices, ...], labels[val_indices], os.path.join(out_dir, 'val'))
+generate_hdf5(images[val_indices, ...], labels[val_indices],
+              os.path.join(out_dir, 'val'))
 print 'Generating testing hdf5 files ...'
-generate_hdf5(images[test_indices, ...], labels[test_indices], os.path.join(out_dir, 'test'))
+generate_hdf5(images[test_indices, ...], labels[test_indices],
+              os.path.join(out_dir, 'test'))
 
