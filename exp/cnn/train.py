@@ -56,7 +56,8 @@ print '### GPU: ', gpu_id
 print '### Number of Categories: ', total_cat_num
 print '### Training epoches: ', total_training_epoch
 
-base_dir = '/home/user/kaichun/cs221/'
+base_dir = '/nfs/home/huanglijie/repo/Facial-Recognition'
+#base_dir = '/home/user/kaichun/cs221/'
 dataset_dir = os.path.join(base_dir, 'data_hdf5')
 
 log_dir = 'log_' + out_suffix
