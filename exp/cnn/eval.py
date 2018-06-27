@@ -1,12 +1,17 @@
-import tensorflow as tf
-import scipy.misc
-import math
-import h5py
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# vi: set ft=python sts=4 ts=4 sw=4 et:
+
 import os
+os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 import sys
-import argparse
 import numpy as np
+import math
+import scipy.misc
+import h5py
+import argparse
 import subprocess
+import tensorflow as tf
 from PIL import Image
 
 import itertools
@@ -14,8 +19,10 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--gpu', type=int, default=0, help='GPU to use [Default: 0]')
-parser.add_argument('--batch', type=int, default=32, help='Batch size [Default: 32]')
+parser.add_argument('--gpu', type=int, default=0,
+                    help='GPU to use [Default: 0]')
+parser.add_argument('--batch', type=int, default=32,
+                    help='Batch size [Default: 32]')
 parser.add_argument('model', type=str, help='Model to Load')
 parser.add_argument('pretrained', type=str, help='Pretrained Model to Load')
 parser.add_argument('out_file', type=str, help='Output File')
@@ -37,7 +44,7 @@ print '### Batch Size: ', batch_size
 print '### GPU: ', gpu_id
 print '### Number of Categories: ', total_cat_num
 
-base_dir = '/home/user/kaichun/cs221/'
+base_dir = '/nfs/home/huanglijie/repo/Facial-Recognition'
 dataset_dir = os.path.join(base_dir, 'data_hdf5')
 
 all_labels_file = os.path.join(base_dir, 'all_labels.txt')
@@ -46,12 +53,11 @@ catid2catname = [line.rstrip() for line in flabel.readlines()]
 flabel.close()
 
 TESTING_FILE_LIST = os.path.join(dataset_dir, 'testing_file_list.txt')
-TRAINING_IMAGES_MEAN_SCALE_HDF5_FILE = os.path.join(dataset_dir, 'training_images_mean_scale.h5')
+TRAINING_IMAGES_MEAN_SCALE_HDF5_FILE = os.path.join(dataset_dir,
+                                            'training_images_mean_scale.h5')
 
-def plot_confusion_matrix(cm, classes,
-                          normalize=False,
-                          title='Confusion matrix',
-                          cmap=plt.cm.Reds):
+def plot_confusion_matrix(cm, classes, normalize=False,
+                          title='Confusion matrix', cmap=plt.cm.Reds):
     """
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
@@ -80,8 +86,6 @@ def plot_confusion_matrix(cm, classes,
     plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
-
-
 
 def getDataFiles(list_filename):
     return [line.rstrip() for line in open(list_filename)]
@@ -119,7 +123,7 @@ def eval():
         input_ph, label_ph = placeholder_inputs()
         is_training_ph = tf.placeholder(tf.bool, shape=())
         
-        pred = model_type.get_model(input_ph, is_training=is_training_ph, \
+        pred = model_type.get_model(input_ph, is_training=is_training_ph,
                 cat_num=total_cat_num, batch_size=batch_size, 
                 weight_decay=0.0, bn_decay=0.0)
 
@@ -151,7 +155,8 @@ def eval():
         cur_test_filename = test_file_list[i]
         printout(flog, 'Loading test file ' + cur_test_filename)
 
-        cur_data, cur_labels = load_h5(cur_test_filename)
+        cur_test_file = os.path.join(dataset_dir, cur_test_filename)
+        cur_data, cur_labels = load_h5(cur_test_file)
         cur_data = np.array(cur_data, dtype=np.float32)
 
         cur_data = normalize(cur_data, image_mean, image_scale)

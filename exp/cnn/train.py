@@ -2,8 +2,8 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
 import os
-#os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
-#os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 import sys
 import numpy as np
 import math
@@ -30,19 +30,12 @@ parser.add_argument('--describe', type=str, default='',
 parser.add_argument('model', type=str, help='Model to Load')
 FLAGS = parser.parse_args()
 
-# batch_size = 32
 batch_size = FLAGS.batch
-# gpu_id = 0
 gpu_id = FLAGS.gpu
-# total_training_epoch = 50
 total_training_epoch = FLAGS.epoch
-# weight_decay = 0.0
 weight_decay = FLAGS.wd
-# out_suffix = model_name
 out_suffix = FLAGS.model + '_' + FLAGS.describe
-# model_to_use = model_name
 model_to_use = FLAGS.model
-# verbose = False
 verbose = FLAGS.verbose
 
 model_type = __import__(model_to_use)
@@ -57,7 +50,6 @@ print '### Number of Categories: ', total_cat_num
 print '### Training epoches: ', total_training_epoch
 
 base_dir = '/nfs/home/huanglijie/repo/Facial-Recognition'
-#base_dir = '/home/user/kaichun/cs221/'
 dataset_dir = os.path.join(base_dir, 'data_hdf5')
 
 log_dir = 'log_' + out_suffix
@@ -76,7 +68,8 @@ flabel.close()
 
 TRAINING_FILE_LIST = os.path.join(dataset_dir, 'training_file_list.txt')
 TESTING_FILE_LIST = os.path.join(dataset_dir, 'validation_file_list.txt')
-TRAINING_IMAGES_MEAN_SCALE_HDF5_FILE = os.path.join(dataset_dir, 'training_images_mean_scale.h5')
+TRAINING_IMAGES_MEAN_SCALE_HDF5_FILE = os.path.join(dataset_dir,
+                                                'training_images_mean_scale.h5')
 
 DECAY_STEP = 30000 * 5
 DECAY_RATE = 0.8
@@ -165,7 +158,9 @@ def random_jitter(batch_data, sigma=0.01, clip=0.05):
     return jittered_data
 
 def placeholder_inputs():
-    input_ph = tf.placeholder(tf.float32, shape=(batch_size, image_size, image_size))
+    input_ph = tf.placeholder(tf.float32, shape=(batch_size,
+                                                 image_size,
+                                                 image_size))
     label_ph = tf.placeholder(tf.int32, shape=(batch_size))
     return input_ph, label_ph
 
@@ -196,9 +191,12 @@ def train():
                     staircase=True)
             bn_decay = tf.minimum(BN_DECAY_CLIP, 1 - bn_momentum)
 
-            pred = model_type.get_model(input_ph, is_training=is_training_ph, \
-                    cat_num=total_cat_num, batch_size=batch_size, \
-                    weight_decay=weight_decay, bn_decay=bn_decay)
+            pred = model_type.get_model(input_ph,
+                                        is_training=is_training_ph,
+                                        cat_num=total_cat_num,
+                                        batch_size=batch_size,
+                                        weight_decay=weight_decay,
+                                        bn_decay=bn_decay)
 
             loss = get_loss(pred, label_ph)
             tf.add_to_collection('losses', loss)
@@ -208,7 +206,8 @@ def train():
 
             total_loss_op = tf.add_n(tf.get_collection('losses'))
 
-            train_op = trainer.minimize(total_loss_op, var_list=train_variables, global_step=batch)
+            train_op = trainer.minimize(total_loss_op, var_list=train_variables,
+                                        global_step=batch)
 
     
         saver = tf.train.Saver()
@@ -387,14 +386,15 @@ def train():
                 eval_one_epoch(epoch)
 
             printout(flog, '\n>>> Training for the epoch %d/%d ...' % (epoch, total_training_epoch))
-            
+ 
             train_file_idx = np.arange(0, len(train_file_list))
             np.random.shuffle(train_file_idx)
 
             train_one_epoch(train_file_idx, epoch)
 
             if (epoch + 1) % 10 == 0:
-                cp_filename = saver.save(sess, os.path.join(log_dir, 'checkpoint_'+str(epoch)+'.ckpt'))
+                cp_filename = saver.save(sess,
+                    os.path.join(log_dir, 'checkpoint_'+str(epoch)+'.ckpt'))
                 printout(flog, 'Successfully store the checkpoint model into' + cp_filename)
 
             flog.flush()
