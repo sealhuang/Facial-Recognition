@@ -19,7 +19,8 @@ def printout(flog, data):
     flog.write(data + '\n')
 
 # main
-base_dir = '/Users/sealhuang/repo/Facial-Recognition'
+#base_dir = '/Users/sealhuang/repo/Facial-Recognition'
+base_dir = '/nfs/home/huanglijie/repo/Facial-Recognition'
 dataset_dir = os.path.join(base_dir, 'data_hdf5')
 
 FILE_LIST = os.path.join(dataset_dir, 'training_file_list.txt')
