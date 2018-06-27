@@ -1,31 +1,49 @@
-import tensorflow as tf
-import scipy.misc
-import math
-import h5py
+# emacs: -*- mode: python; py-indent-offset: 4; indent-tabs-mode: nil -*-
+# vi: set ft=python sts=4 ts=4 sw=4 et:
+
 import os
+os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 import sys
-import argparse
 import numpy as np
+import math
+import scipy.misc
+import h5py
+import argparse
 import subprocess
+import tensorflow as tf
 from PIL import Image
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--gpu', type=int, default=0, help='GPU to use [Default: 0]')
-parser.add_argument('--batch', type=int, default=32, help='Batch size [Default: 32]')
-parser.add_argument('--epoch', type=int, default=50, help='Total Epoch to Train [Default: 50]')
-parser.add_argument('--wd', type=float, default=0.0, help='Weight Decay [Default: 0.0]')
-parser.add_argument('--verbose', type=bool, default=False, help='Verbose Mode [Default: False]')
-parser.add_argument('--describe', type=str, default='', help='Describe the current experiment')
+parser.add_argument('--gpu', type=int, default=0,
+                    help='GPU to use [Default: 0]')
+parser.add_argument('--batch', type=int, default=32,
+                    help='Batch size [Default: 32]')
+parser.add_argument('--epoch', type=int, default=50,
+                    help='Total Epoch to Train [Default: 50]')
+parser.add_argument('--wd', type=float, default=0.0,
+                    help='Weight Decay [Default: 0.0]')
+parser.add_argument('--verbose', type=bool, default=False,
+                    help='Verbose Mode [Default: False]')
+parser.add_argument('--describe', type=str, default='',
+                    help='Describe the current experiment')
 parser.add_argument('model', type=str, help='Model to Load')
 FLAGS = parser.parse_args()
 
+# batch_size = 32
 batch_size = FLAGS.batch
+# gpu_id = 0
 gpu_id = FLAGS.gpu
+# total_training_epoch = 50
 total_training_epoch = FLAGS.epoch
+# weight_decay = 0.0
 weight_decay = FLAGS.wd
+# out_suffix = model_name
 out_suffix = FLAGS.model + '_' + FLAGS.describe
-verbose = FLAGS.verbose
+# model_to_use = model_name
 model_to_use = FLAGS.model
+# verbose = False
+verbose = FLAGS.verbose
 
 model_type = __import__(model_to_use)
 
