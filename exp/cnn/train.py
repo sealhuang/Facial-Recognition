@@ -2,8 +2,8 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 
 import os
-os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+#os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
+#os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 import sys
 import numpy as np
 import math
