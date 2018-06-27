@@ -170,7 +170,7 @@ def placeholder_inputs():
     return input_ph, label_ph
 
 def get_loss(pred, label):
-    return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(pred, label))
+    return tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=pred, labels=label))
 
 def train():
     with tf.Graph().as_default():
@@ -250,9 +250,10 @@ def train():
 
             for i in range(num_train_file):
                 cur_train_filename = train_file_list[train_file_idx[i]]
+                cur_train_file = os.path.join(dataset_dir, cur_train_filename)
                 printout(flog, 'Loading train file ' + cur_train_filename)
 
-                cur_data, cur_labels = load_h5(cur_train_filename)
+                cur_data, cur_labels = load_h5(cur_train_file)
                 cur_data = np.array(cur_data, dtype=np.float32)
 
                 cur_data = normalize(cur_data, image_mean, image_scale)
@@ -324,9 +325,10 @@ def train():
 
             for i in range(num_test_file):
                 cur_test_filename = test_file_list[i]
+                cur_test_file = os.path.join(dataset_dir, cur_test_filename)
                 printout(flog, 'Loading test file ' + cur_test_filename)
 
-                cur_data, cur_labels = load_h5(cur_test_filename)
+                cur_data, cur_labels = load_h5(cur_test_file)
                 cur_data = np.array(cur_data, dtype=np.float32)
 
                 cur_data = normalize(cur_data, image_mean, image_scale)
