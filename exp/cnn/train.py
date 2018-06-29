@@ -17,7 +17,7 @@ from PIL import Image
 parser = argparse.ArgumentParser()
 parser.add_argument('--gpu', type=int, default=0,
                     help='GPU to use [Default: 0]')
-parser.add_argument('--batch', type=int, default=128,
+parser.add_argument('--batch', type=int, default=32,
                     help='Batch size [Default: 32]')
 parser.add_argument('--epoch', type=int, default=50,
                     help='Total Epoch to Train [Default: 50]')
