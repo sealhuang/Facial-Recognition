@@ -71,7 +71,7 @@ def lap_normalize(img, scale_n=4):
     img = tf.expand_dims(img, 0)
     tlevels = lap_split_n(img, scale_n)
     tlevels = list(map(normalize_std, tlevels))
-    out = lap_merge(elevels)
+    out = lap_merge(tlevels)
     return out[0, :, :, :]
 
 def tffunc(*argtypes):
@@ -172,7 +172,7 @@ if __name__=='__main__':
     channel = 0
 
     # start with a gray image with a little noise
-    img_noise = np.random.uniform(size(1, 48, 48)) + 115.0
+    img_noise = np.random.uniform(size=(1, 48, 48)) + 115.0
     t_obj = graph.get_tensor_by_name('%s:0'%layer)[:, :, :, channel]
  
     # defining the optimization objective
