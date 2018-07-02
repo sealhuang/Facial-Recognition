@@ -94,11 +94,12 @@ if __name__=='__main__':
     f = h5py.File(input_scale_file)
     image_scale = f['scale'][()]
     image_mean = f['mean'][:]
+    image_mean = np.mean(image_mean)
 
     # load the model
     is_training = False
     with tf.device('/gpu:0'):
-        t_input = tf.placeholder(tf.float32, shape=(1, 48, 48))
+        t_input = tf.placeholder(tf.float32, name='input')
         t_preprocessed = (t_input - image_mean) * image_scale
         is_training_ph = tf.placeholder(tf.bool, shape=())
         net = sel_model.get_model(t_preprocessed, is_training=is_training_ph,
@@ -119,38 +120,38 @@ if __name__=='__main__':
     print('Number of layers', len(layers))
     print('Total number of feature channels:', sum(feature_nums))
 
-    # Helper function
-    def tffunc(*argtypes):
-        """Helper that transforms TF-graph generating function into a regular
-        one.
-        """
-        placeholders = list(map(tf.placeholder, argtypes))
-        def wrap(f):
-            out = f(*placeholders)
-            def wrapper(*args, **kw):
-                return out.eval(dict(zip(placeholders, args)), session=sess)
-            return wrapper
-        return wrap
+    ## Helper function
+    #def tffunc(*argtypes):
+    #    """Helper that transforms TF-graph generating function into a regular
+    #    one.
+    #    """
+    #    placeholders = list(map(tf.placeholder, argtypes))
+    #    def wrap(f):
+    #        out = f(*placeholders)
+    #        def wrapper(*args, **kw):
+    #            return out.eval(dict(zip(placeholders, args)), session=sess)
+    #        return wrapper
+    #    return wrap
 
-    def calc_grad_tiled(img, t_grad, tile_size=512):
-        """Compute the value of tensor t_grad over the image in a tiled way.
-        Random shifts are applied to the image to blur tile  boundaries over
-        multiple iterations.
-        """
-        sz = tile_size
-        h, w = img.shape[:2]
-        sx, sy = np.random.randint(sz, size=2)
-        img_shift = np.roll(np.roll(img, sx, 1), sy, 0)
-        grad = np.zeros_like(img)
-        for y in range(0, max(h-sz//2, sz), sz):
-            for x in range(0, max(w-sz//2, sz), sz):
-                sub = img_shift[y:y+sz, x:x+sz]
-                sub = np.expand_dims(sub, 0)
-                g = sess.run(t_grad, {t_input:sub})
-                grad[y:y+sz, x:x+sz] = g[0, :, :]
-        return np.roll(np.roll(grad, -sx, 1), -sy, 0)
+    #def calc_grad_tiled(img, t_grad, tile_size=512):
+    #    """Compute the value of tensor t_grad over the image in a tiled way.
+    #    Random shifts are applied to the image to blur tile  boundaries over
+    #    multiple iterations.
+    #    """
+    #    sz = tile_size
+    #    h, w = img.shape[:2]
+    #    sx, sy = np.random.randint(sz, size=2)
+    #    img_shift = np.roll(np.roll(img, sx, 1), sy, 0)
+    #    grad = np.zeros_like(img)
+    #    for y in range(0, max(h-sz//2, sz), sz):
+    #        for x in range(0, max(w-sz//2, sz), sz):
+    #            sub = img_shift[y:y+sz, x:x+sz]
+    #            sub = np.expand_dims(sub, 0)
+    #            g = sess.run(t_grad, {t_input:sub})
+    #            grad[y:y+sz, x:x+sz] = g[0, :, :]
+    #    return np.roll(np.roll(grad, -sx, 1), -sy, 0)
 
-    layer = 'conv1/Conv2D'
+    layer = 'conv4/Conv2D'
     channel = 0
 
     # start with a gray image with a little noise
@@ -168,16 +169,24 @@ if __name__=='__main__':
     resize = tffunc(np.float32, np.int32)(resize)
 
     img = img_noise.copy()
-    for octave in range(3):
-        print octave
-        #if octave>0:
-        #    hw = np.float32(img.shape[:2]) * 1.4
-        #    img = resize(img, np.int32(hw))
-        for i in range(10):
-            print 'i: %s'%(i)
-            g = calc_grad_tiled(img, t_grad)
-            g = lap_norm_func(g)
-            img += g[:, :, 0]*1.0
-            print '.',
-        savearray(visstd(img), 'test_%s.npy'%(octave))
+    for i in range(20):
+        g, score = sess.run([t_grad, t_score],
+                            {t_input: tf.expand_dims(tf.expand_dims(img,0),-1)})
+        # normalizing the gradient, so the same step size should work
+        # for different layers and networks
+        g /= g.std() + 1e-8
+        print g.shape()
+        img += g[:, :, 0]*1.0
+        print '.',
+    savearray(visstd(img), 'test.npy')
+    #for octave in range(3):
+    #    if octave>0:
+    #        hw = np.float32(img.shape[:2]) * 1.4
+    #        img = resize(img, np.int32(hw))
+    #    for i in range(10):
+    #        g = calc_grad_tiled(img, t_grad)
+    #        g = lap_norm_func(g)
+    #        img += g[:, :, 0]*1.0
+    #        print '.',
+    #    savearray(visstd(img), 'test_%s.npy'%(octave))
 
