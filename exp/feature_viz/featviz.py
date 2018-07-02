@@ -68,46 +68,16 @@ def normalize_std(img, eps=1e-10):
 
 def lap_normalize(img, scale_n=4):
     """Perform the Laplacian pyramid normalization."""
-    img = tf.expand_dims(img, 0)
+    img = tf.expand_dims(img, -1)
     tlevels = lap_split_n(img, scale_n)
     tlevels = list(map(normalize_std, tlevels))
     out = lap_merge(tlevels)
     return out[0, :, :, :]
 
-#def tffunc(*argtypes):
-#    """Helper that transforms TF-graph generating function into a regular one.
-#    See 'resize' function below.
-#    """
-#    placeholders = list(map(tf.placeholder, argtypes))
-#    def wrap(f):
-#        out = f(*placeholders)
-#        def wrapper(*args, **kw):
-#            return out.eval(dict(zip(placeholders, args)),
-#                            session=kw.get('session'))
-#        return wrapper
-#    return wrap
-
 def resize(img, size):
     """Helper function that uses TF to resize an image"""
     img = tf.expand_dims(img, 0)
     return tf.image.resize_bilinear(img, size)[0, :, :, :]
-
-#def calc_grad_tiled(img, t_grad, tile_size=512):
-#    """Compute the value of tensor t_grad over the image in a tiled way.
-#    Random shifts are applied to the image to blur tile  boundaries over
-#    multiple iterations.
-#    """
-#    sz = tile_size
-#    h, w = img.shape[:2]
-#    sx, sy = np.random.randint(sz, size=2)
-#    img_shift = np.roll(np.roll(img, sx, 1), sy, 0)
-#    grad = np.zeros_like(img)
-#    for y in range(0, max(h-sz//2, sz), sz):
-#        for x in range(0, max(w-sz//2, sz), sz):
-#            sub = img_shift[y:y+sz, x:x+sz]
-#            g = sess.run(t_grad, {t_input:sub})
-#            grad[y:y+sz, x:x+sz] = g
-#    return np.roll(np.roll(grad, -sx, 1), -sy, 0)
 
 def render_lapnorm(t_obj, img0, visfunc=visstd, iter_n=10, step=1.0,
                    octave_n=3, octave_scale=1.4, lap_n=4):
@@ -147,8 +117,8 @@ if __name__=='__main__':
     # load the model
     is_training = False
     with tf.device('/gpu:0'):
-        input_ph = tf.placeholder(tf.float32, shape=(1, 48, 48))
-        t_preprocessed = (input_ph - image_mean) * image_scale
+        t_input = tf.placeholder(tf.float32, shape=(1, 48, 48))
+        t_preprocessed = (t_input - image_mean) * image_scale
         is_training_ph = tf.placeholder(tf.bool, shape=())
         net = sel_model.get_model(t_preprocessed, is_training=is_training_ph,
                                   cat_num=7, weight_decay=0.0, bn_decay=0.0)
@@ -194,7 +164,7 @@ if __name__=='__main__':
         for y in range(0, max(h-sz//2, sz), sz):
             for x in range(0, max(w-sz//2, sz), sz):
                 sub = img_shift[y:y+sz, x:x+sz]
-                g = sess.run(t_grad, {input_ph:sub})
+                g = sess.run(t_grad, {t_input:sub})
                 grad[y:y+sz, x:x+sz] = g
         return np.roll(np.roll(grad, -sx, 1), -sy, 0)
 
