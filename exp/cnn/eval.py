@@ -110,8 +110,8 @@ def normalize(batch_data, mean, scale):
     return (batch_data - mean) * scale
 
 def placeholder_inputs():
-    input_ph = tf.placeholder(tf.float32, shape=(batch_size, image_size, image_size))
-    label_ph = tf.placeholder(tf.int32, shape=(batch_size))
+    input_ph = tf.placeholder(tf.float32, shape=(None, image_size, image_size))
+    label_ph = tf.placeholder(tf.int32, shape=(None))
     return input_ph, label_ph
 
 def eval():
@@ -124,8 +124,7 @@ def eval():
         is_training_ph = tf.placeholder(tf.bool, shape=())
         
         pred = model_type.get_model(input_ph, is_training=is_training_ph,
-                cat_num=total_cat_num, batch_size=batch_size, 
-                weight_decay=0.0, bn_decay=0.0)
+                    cat_num=total_cat_num, weight_decay=0.0, bn_decay=0.0)
 
     saver = tf.train.Saver()
     
