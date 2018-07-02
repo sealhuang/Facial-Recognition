@@ -21,6 +21,7 @@ Laplacian Pyramid Gradient Normalization
 def savearray(a, filename):
     a = np.uint8(np.clip(a, 0, 1)*255)
     plt.imshow(a)
+    filename.replace('/', '_')
     plt.savefig(filename+'.png')
     plt.close()
     np.save(filename+'.npy', a)
