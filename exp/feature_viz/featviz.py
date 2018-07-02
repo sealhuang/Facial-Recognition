@@ -155,31 +155,31 @@ if __name__=='__main__':
         channel_num = int(graph.get_tensor_by_name(layer+':0').get_shape()[-1])
         for channel in range(channel_num):
 
-        # start with a gray image with a little noise
-        img_noise = np.random.uniform(size=(48, 48)) + 115.0
-        print 'Viz feature of Layer %s, Channel %s'%(layer, channel)
-        t_obj = graph.get_tensor_by_name('%s:0'%layer)[:, :, :, channel]
+            # start with a gray image with a little noise
+            img_noise = np.random.uniform(size=(48, 48)) + 115.0
+            print 'Viz feature of Layer %s, Channel %s'%(layer, channel)
+            t_obj = graph.get_tensor_by_name('%s:0'%layer)[:, :, :, channel]
  
-        # defining the optimization objective
-        t_score = tf.reduce_mean(t_obj)
-        # behold the power of automatic differentiation!
-        t_grad = tf.gradients(t_score, t_input)[0]
-        # build the laplacian normalization graph
-        #lap_norm_func = tffunc(np.float32)(partial(lap_normalize, scale_n=4))
+            # defining the optimization objective
+            t_score = tf.reduce_mean(t_obj)
+            # behold the power of automatic differentiation!
+            t_grad = tf.gradients(t_score, t_input)[0]
+            # build the laplacian normalization graph
+            #lap_norm_func = tffunc(np.float32)(partial(lap_normalize, scale_n=4))
 
-        #resize = tffunc(np.float32, np.int32)(resize)
+            #resize = tffunc(np.float32, np.int32)(resize)
 
-        img = img_noise.copy()
-        for i in range(100):
-            g, score = sess.run([t_grad, t_score],
-                                {t_input: np.expand_dims(img, 0),
-                                 is_training_ph: is_training})
-            # normalizing the gradient, so the same step size should work
-            # for different layers and networks
-            g /= g.std() + 1e-8
-            img += g[0, :, :]*1.0
-            print '.',
-        savearray(visstd(img), '%s_%s'%(layer, channel))
+            img = img_noise.copy()
+            for i in range(100):
+                g, score = sess.run([t_grad, t_score],
+                                    {t_input: np.expand_dims(img, 0),
+                                     is_training_ph: is_training})
+                # normalizing the gradient, so the same step size should work
+                # for different layers and networks
+                g /= g.std() + 1e-8
+                img += g[0, :, :]*1.0
+                print '.',
+            savearray(visstd(img), '%s_%s'%(layer, channel))
     #for octave in range(3):
     #    if octave>0:
     #        hw = np.float32(img.shape[:2]) * 1.4
