@@ -81,7 +81,7 @@ def lap_normalize(img, scale_n=4):
 
 def resize(img, size):
     """Helper function that uses TF to resize an image"""
-    img = tf.expand_dims(tf.expand_dims(img, 0), -1)
+    img = np.expand_dims(np.expand_dims(img, 0), -1)
     return tf.image.resize_bilinear(img, size)[0, :, :, 0]
 
 
@@ -151,6 +151,8 @@ if __name__=='__main__':
                                       is_training_ph: is_training})
                 grad[y:y+sz, x:x+sz] = g[0, :, :]
         return np.roll(np.roll(grad, -sx, 1), -sy, 0)
+    
+    resize = tffunc(np.float32, np.int32)(resize)
 
     for layer in layers:
         channel_num = int(graph.get_tensor_by_name(layer+':0').get_shape()[-1])
@@ -167,7 +169,6 @@ if __name__=='__main__':
             # build the laplacian normalization graph
             lap_norm_func = tffunc(np.float32)(partial(lap_normalize,scale_n=4))
 
-            resize = tffunc(np.float32, np.int32)(resize)
 
             img = img_noise.copy()
             for octave in range(3):
