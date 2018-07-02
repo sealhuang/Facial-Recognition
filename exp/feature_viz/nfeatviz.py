@@ -82,7 +82,7 @@ def lap_normalize(img, scale_n=4):
 def resize(img, size):
     """Helper function that uses TF to resize an image"""
     img = tf.expand_dims(tf.expand_dims(img, 0), -1)
-    return tf.image.resize_bilinear(img, size)[0, :, :, :]
+    return tf.image.resize_bilinear(img, size)[0, :, :, 0]
 
 
 if __name__=='__main__':
@@ -147,10 +147,8 @@ if __name__=='__main__':
         for y in range(0, max(h-sz//2, sz), sz):
             for x in range(0, max(w-sz//2, sz), sz):
                 sub = img_shift[y:y+sz, x:x+sz]
-                sub = np.expand_dims(sub, 0)
                 g = sess.run(t_grad, {t_input: np.expand_dims(sub, 0),
                                       is_training_ph: is_training})
-                print 'grad_tiled g shape', g.shape
                 grad[y:y+sz, x:x+sz] = g[0, :, :]
         return np.roll(np.roll(grad, -sx, 1), -sy, 0)
 
@@ -174,7 +172,8 @@ if __name__=='__main__':
             img = img_noise.copy()
             for octave in range(3):
                 if octave>0:
-                    hw = np.float32(img.shape[:2]) * 1.4
+                    hw = np.float32(img.shape[:2]) * 1.5
+                    print hw
                     img = resize(img, np.int32(hw))
                 for i in range(10):
                     g = calc_grad_tiled(img, t_grad)
@@ -182,5 +181,4 @@ if __name__=='__main__':
                     img += g[:, :, 0]*1.0
                     print '.',
             savearray(visstd(img), '%s_%s'%(layer, channel))
-            
-`
+ 
