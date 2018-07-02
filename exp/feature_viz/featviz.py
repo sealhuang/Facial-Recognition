@@ -125,13 +125,13 @@ def render_lapnorm(t_obj, img0, visfunc=visstd, iter_n=10, step=1.0,
             g = calc_grad_tiled(img, t_grad)
             g = lap_norm_func(g)
             img += g*step
-            print('.', end=' ')
+            print '.',
         savearray(visfunc(img))
 
 if __name__=='__main__':
     base_dir = r'/nfs/home/huanglijie/repo/Facial-Recognition/exp/cnn'
     model_dir = os.path.join(base_dir, 'log_model_large_promissing_')
-    model_data = os.path.join(base_dir, 'checkpoint_49.ckpt')
+    model_data = os.path.join(model_dir, 'checkpoint_49.ckpt')
 
     # creating TensorFlow session and loading the model
     is_training = False
