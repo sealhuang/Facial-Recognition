@@ -177,8 +177,7 @@ if __name__=='__main__':
         def wrap(f):
             out = f(*placeholders)
             def wrapper(*args, **kw):
-                return out.eval(dict(zip(placeholders, args)),
-                                session=kw.get('session'))
+                return out.eval(dict(zip(placeholders, args)), session=sess)
             return wrapper
         return wrap
 
