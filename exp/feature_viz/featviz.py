@@ -168,15 +168,14 @@ if __name__=='__main__':
     #resize = tffunc(np.float32, np.int32)(resize)
 
     img = img_noise.copy()
-    for i in range(20):
+    for i in range(100):
         g, score = sess.run([t_grad, t_score],
                             {t_input: np.expand_dims(img, 0),
                              is_training_ph: is_training})
         # normalizing the gradient, so the same step size should work
         # for different layers and networks
         g /= g.std() + 1e-8
-        print g.shape()
-        img += g[:, :, 0]*1.0
+        img += g[0, :, :]*1.0
         print '.',
     savearray(visstd(img), 'test.npy')
     #for octave in range(3):
