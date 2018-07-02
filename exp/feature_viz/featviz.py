@@ -170,7 +170,7 @@ if __name__=='__main__':
     img = img_noise.copy()
     for i in range(20):
         g, score = sess.run([t_grad, t_score],
-                            {t_input: tf.expand_dims(tf.expand_dims(img,0),-1)})
+                            {t_input: np.expand_dims(img, 0)})
         # normalizing the gradient, so the same step size should work
         # for different layers and networks
         g /= g.std() + 1e-8
