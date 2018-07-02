@@ -152,7 +152,6 @@ if __name__=='__main__':
                 grad[y:y+sz, x:x+sz] = g[0, :, :]
         return np.roll(np.roll(grad, -sx, 1), -sy, 0)
     
-    resize = tffunc(np.float32, np.int32)(resize)
 
     for layer in layers:
         channel_num = int(graph.get_tensor_by_name(layer+':0').get_shape()[-1])
@@ -168,7 +167,7 @@ if __name__=='__main__':
             t_grad = tf.gradients(t_score, t_input)[0]
             # build the laplacian normalization graph
             lap_norm_func = tffunc(np.float32)(partial(lap_normalize,scale_n=4))
-
+            resize = tffunc(np.float32, np.int32)(resize)
 
             img = img_noise.copy()
             for octave in range(3):
