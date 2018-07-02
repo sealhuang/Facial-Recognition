@@ -198,7 +198,7 @@ if __name__=='__main__':
         for y in range(0, max(h-sz//2, sz), sz):
             for x in range(0, max(w-sz//2, sz), sz):
                 sub = img_shift[y:y+sz, x:x+sz]
-                g = sess.run(t_grad, {t_input:sub})
+                g = sess.run(t_grad, {input_ph:sub})
                 grad[y:y+sz, x:x+sz] = g
         return np.roll(np.roll(grad, -sx, 1), -sy, 0)
 
