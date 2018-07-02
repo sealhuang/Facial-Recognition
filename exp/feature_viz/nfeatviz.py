@@ -136,7 +136,7 @@ if __name__=='__main__':
 
     def calc_grad_tiled(img, t_grad, tile_size=48):
         """Compute the value of tensor t_grad over the image in a tiled way.
-        Random shifts are applied to the image to blur tile  boundaries over
+        Random shifts are applied to the image to blur tile boundaries over
         multiple iterations.
         """
         sz = tile_size
@@ -175,7 +175,7 @@ if __name__=='__main__':
                 if octave>0:
                     hw = np.float32(img.shape[:2]) * 1.5
                     img = resize(img, np.int32(hw))
-                for i in range(10):
+                for i in range(200):
                     g = calc_grad_tiled(img, t_grad)
                     g = lap_norm_func(g)
                     img += g[:, :, 0]*1.0
