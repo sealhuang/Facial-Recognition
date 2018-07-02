@@ -33,8 +33,10 @@ def get_model(input_images, is_training, cat_num,  weight_decay, bn_decay):
                          bn_decay=bn_decay, bn=True, is_training=is_training)
     net = tf_util.max_pool2d(net, [2, 2], stride=[2, 2], scope='mp4',
                              padding='SAME')
-
-    net = tf.reshape(net, [-1, 4608])
+    
+    conv_out_shape = net.get_shape()
+    fc_input_shape = conv_out_shape[1]*conv_out_shape[2]*conv_out_shape[3]
+    net = tf.reshape(net, [-1, fc_input_shape])
 
     net = tf_util.fully_connected(net, 256, bn=True, is_training=is_training,
                                   weight_decay=weight_decay, bn_decay=bn_decay,
