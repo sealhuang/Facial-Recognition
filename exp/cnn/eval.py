@@ -100,6 +100,7 @@ def load_h5_mean_scale(h5_filename):
     f = h5py.File(h5_filename)
     image_scale = f['scale'][()]
     image_mean = f['mean'][:]
+    print image_mean, image_scale
     return (image_mean, image_scale)
 
 def printout(flog, data):
