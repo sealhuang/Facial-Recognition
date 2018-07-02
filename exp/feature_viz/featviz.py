@@ -6,9 +6,11 @@ os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 import numpy as np
 from functools import partial
-
 import tensorflow as tf
 
+import sys
+sys.path.append('../cnn/')
+import model_large_promissing as sel_model
 
 """
 Laplacian Pyramid Gradient Normalization
@@ -129,21 +131,31 @@ def render_lapnorm(t_obj, img0, visfunc=visstd, iter_n=10, step=1.0,
 if __name__=='__main__':
     base_dir = r'/nfs/home/huanglijie/repo/Facial-Recognition/exp/cnn'
     model_dir = os.path.join(base_dir, 'log_model_large_promissing_')
-    model_meta = os.path.join(model_dir, 'checkpoint_49.ckpt.meta')
     model_data = os.path.join(base_dir, 'checkpoint_49.ckpt')
 
     # creating TensorFlow session and loading the model
-    graph = tf.Graph()
-    sess = tf.Session(graph=graph)
-    saver = tf.train.import_meta_graph(model_meta)
-    saver.restore(sess, model_data)
+    is_training = False
+    with tf.device('/gpu:0'):
+        input_ph = tf.placeholder(tf.float32, shape=(32, 48, 48))
+        is_training_ph = tf.placeholder(tf.bool, shape=())
+        net = sel_model.get_model(input_ph, is_training=is_training_ph,
+                                  cat_num=7, batch_size=32, weight_decay=0.0,
+                                  bn_decay=0.0)
+    saver = tf.train.Saver()
 
-    # define the input tensor
-    t_input = tf.placeholder(np.float32, name='input')
-    # TODO: modify this part
-    imagenet_mean = 117.0
-    t_preprocessed = tf.expand_dims(t_input-imagenet_mean, 0)
-    tf.import_graph_def(graph_def, {'input':t_preprocessed})
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+    config.allow_soft_placement = True
+    sess = tf.Session(config=config)
+    saver.restore(sess, model_data)
+    graph = sess.graph
+
+    ## define the input tensor
+    #t_input = tf.placeholder(np.float32, name='input')
+    ## TODO: modify this part
+    #imagenet_mean = 117.0
+    #t_preprocessed = tf.expand_dims(t_input-imagenet_mean, 0)
+    #tf.import_graph_def(graph_def, {'input':t_preprocessed})
 
     # get Conv2D layer name
     layers = [op.name for op in graph.get_operations() if op.type=='Conv2D']
@@ -152,11 +164,11 @@ if __name__=='__main__':
     print('Number of layers', len(layers))
     print('Total number of feature channels:', sum(feature_nums))
 
-    layer = ''
-    channel = 10
+    #layer = ''
+    #channel = 10
 
-    # start with a gray image with a little noise
-    img_noise = np.random.uniform(size(224, 224, 3)) + 100.0
-    t_obj = graph.get_tensor_by_name('%s:0'%layer)[:, :, :, channel]
-    render_lapnorm(t_obj, img_noise)
+    ## start with a gray image with a little noise
+    #img_noise = np.random.uniform(size(224, 224, 3)) + 100.0
+    #t_obj = graph.get_tensor_by_name('%s:0'%layer)[:, :, :, channel]
+    #render_lapnorm(t_obj, img_noise)
 
