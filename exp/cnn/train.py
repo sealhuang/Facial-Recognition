@@ -158,10 +158,8 @@ def random_jitter(batch_data, sigma=0.01, clip=0.05):
     return jittered_data
 
 def placeholder_inputs():
-    input_ph = tf.placeholder(tf.float32, shape=(batch_size,
-                                                 image_size,
-                                                 image_size))
-    label_ph = tf.placeholder(tf.int32, shape=(batch_size))
+    input_ph = tf.placeholder(tf.float32, shape=(None, image_size, image_size))
+    label_ph = tf.placeholder(tf.int32, shape=(None))
     return input_ph, label_ph
 
 def get_loss(pred, label):
@@ -194,7 +192,6 @@ def train():
             pred = model_type.get_model(input_ph,
                                         is_training=is_training_ph,
                                         cat_num=total_cat_num,
-                                        batch_size=batch_size,
                                         weight_decay=weight_decay,
                                         bn_decay=bn_decay)
 
