@@ -20,9 +20,10 @@ Laplacian Pyramid Gradient Normalization
 
 def savearray(a, filename):
     a = np.uint8(np.clip(a, 0, 1)*255)
-    #plt.imshow(a)
-    #plt.savefig('test.png')
-    np.save(filename, a)
+    plt.imshow(a)
+    plt.savefig(filename+'.png')
+    plt.close()
+    np.save(filename+'.npy', a)
 
 def visstd(a, s=0.1):
     """Normalize the image range for visualization"""
@@ -178,7 +179,7 @@ if __name__=='__main__':
             g /= g.std() + 1e-8
             img += g[0, :, :]*1.0
             print '.',
-        savearray(visstd(img), '%s_%S.npy'%(layer, channel))
+        savearray(visstd(img), '%s_%s'%(layer, channel))
     #for octave in range(3):
     #    if octave>0:
     #        hw = np.float32(img.shape[:2]) * 1.4
