@@ -81,7 +81,7 @@ def lap_normalize(img, scale_n=4):
 
 def resize(img, size):
     """Helper function that uses TF to resize an image"""
-    img = np.expand_dims(np.expand_dims(img, 0), -1)
+    img = tf.expand_dims(tf.expand_dims(img, 0), -1)
     return tf.image.resize_bilinear(img, size)[0, :, :, 0]
 
 
@@ -173,7 +173,6 @@ if __name__=='__main__':
             for octave in range(3):
                 if octave>0:
                     hw = np.float32(img.shape[:2]) * 1.5
-                    print hw
                     img = resize(img, np.int32(hw))
                 for i in range(10):
                     g = calc_grad_tiled(img, t_grad)
