@@ -92,22 +92,22 @@ def resize(img, size):
     img = tf.expand_dims(img, 0)
     return tf.image.resize_bilinear(img, size)[0, :, :, :]
 
-def calc_grad_tiled(img, t_grad, tile_size=512):
-    """Compute the value of tensor t_grad over the image in a tiled way.
-    Random shifts are applied to the image to blur tile  boundaries over
-    multiple iterations.
-    """
-    sz = tile_size
-    h, w = img.shape[:2]
-    sx, sy = np.random.randint(sz, size=2)
-    img_shift = np.roll(np.roll(img, sx, 1), sy, 0)
-    grad = np.zeros_like(img)
-    for y in range(0, max(h-sz//2, sz), sz):
-        for x in range(0, max(w-sz//2, sz), sz):
-            sub = img_shift[y:y+sz, x:x+sz]
-            g = sess.run(t_grad, {t_input:sub})
-            grad[y:y+sz, x:x+sz] = g
-    return np.roll(np.roll(grad, -sx, 1), -sy, 0)
+#def calc_grad_tiled(img, t_grad, tile_size=512):
+#    """Compute the value of tensor t_grad over the image in a tiled way.
+#    Random shifts are applied to the image to blur tile  boundaries over
+#    multiple iterations.
+#    """
+#    sz = tile_size
+#    h, w = img.shape[:2]
+#    sx, sy = np.random.randint(sz, size=2)
+#    img_shift = np.roll(np.roll(img, sx, 1), sy, 0)
+#    grad = np.zeros_like(img)
+#    for y in range(0, max(h-sz//2, sz), sz):
+#        for x in range(0, max(w-sz//2, sz), sz):
+#            sub = img_shift[y:y+sz, x:x+sz]
+#            g = sess.run(t_grad, {t_input:sub})
+#            grad[y:y+sz, x:x+sz] = g
+#    return np.roll(np.roll(grad, -sx, 1), -sy, 0)
 
 def render_lapnorm(t_obj, img0, visfunc=visstd, iter_n=10, step=1.0,
                    octave_n=3, octave_scale=1.4, lap_n=4):
@@ -173,6 +173,7 @@ if __name__=='__main__':
 
     # start with a gray image with a little noise
     img_noise = np.random.uniform(size=(1, 48, 48)) + 115.0
+    print 'Viz feature of Layer %s, Channel %s'%(layer, channel)
     t_obj = graph.get_tensor_by_name('%s:0'%layer)[:, :, :, channel]
  
     # defining the optimization objective
@@ -183,6 +184,23 @@ if __name__=='__main__':
     lap_norm_func = tffunc(np.float32)(partial(lap_normalize, scale_n=4))
 
     resize = tffunc(np.float32, np.int32)(resize)
+
+    def calc_grad_tiled(img, t_grad, tile_size=512):
+        """Compute the value of tensor t_grad over the image in a tiled way.
+        Random shifts are applied to the image to blur tile  boundaries over
+        multiple iterations.
+        """
+        sz = tile_size
+        h, w = img.shape[:2]
+        sx, sy = np.random.randint(sz, size=2)
+        img_shift = np.roll(np.roll(img, sx, 1), sy, 0)
+        grad = np.zeros_like(img)
+        for y in range(0, max(h-sz//2, sz), sz):
+            for x in range(0, max(w-sz//2, sz), sz):
+                sub = img_shift[y:y+sz, x:x+sz]
+                g = sess.run(t_grad, {t_input:sub})
+                grad[y:y+sz, x:x+sz] = g
+        return np.roll(np.roll(grad, -sx, 1), -sy, 0)
 
     img = img_noise.copy()
     for octave in range(3):
