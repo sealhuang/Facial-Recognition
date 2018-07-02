@@ -7,6 +7,7 @@ os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 import numpy as np
 import h5py
 from functools import partial
+import matplotlib.pylab as plt
 import tensorflow as tf
 
 import sys
@@ -17,9 +18,11 @@ import model_large_promissing as sel_model
 Laplacian Pyramid Gradient Normalization
 """
 
-def savearray(a, fmt='jpeg'):
+def savearray(a):
     a = np.uint8(np.clip(a, 0, 1)*255)
-    # TODO save image
+    #plt.imshow(a)
+    #plt.savefig('test.png')
+    np.save('test.png', a)
 
 def visstd(a, s=0.1):
     """Normalize the image range for visualization"""
@@ -144,12 +147,11 @@ if __name__=='__main__':
     # load the model
     is_training = False
     with tf.device('/gpu:0'):
-        input_ph = tf.placeholder(tf.float32, shape=(32, 48, 48))
+        input_ph = tf.placeholder(tf.float32, shape=(1, 48, 48))
         t_preprocessed = (input_ph - image_mean) * image_scale
         is_training_ph = tf.placeholder(tf.bool, shape=())
         net = sel_model.get_model(t_preprocessed, is_training=is_training_ph,
-                                  cat_num=7, batch_size=32, weight_decay=0.0,
-                                  bn_decay=0.0)
+                                  cat_num=7, weight_decay=0.0, bn_decay=0.0)
     saver = tf.train.Saver()
     # create tensorflow session
     config = tf.ConfigProto()
@@ -170,7 +172,27 @@ if __name__=='__main__':
     channel = 0
 
     # start with a gray image with a little noise
-    img_noise = np.random.uniform(size(32, 48, 48)) + 100.0
+    img_noise = np.random.uniform(size(1, 48, 48)) + 115.0
     t_obj = graph.get_tensor_by_name('%s:0'%layer)[:, :, :, channel]
-    render_lapnorm(t_obj, img_noise)
+ 
+    # defining the optimization objective
+    t_score = tf.reduce_mean(t_obj)
+    # behold the power of automatic differentiation!
+    t_grad = tf.gradients(t_score, input_ph)[0]
+    # build the laplacian normalization graph
+    lap_norm_func = tffunc(np.float32)(partial(lap_normalize, scale_n=4))
+
+    resize = tffunc(np.float32, np.int32)(resize)
+
+    img = img_noise.copy()
+    for octave in range(3):
+        if octave>0:
+            hw = np.float32(img.shape[:2]) * 1.4
+            img = resize(img, np.int32(hw))
+        for i in range(10):
+            g = calc_grad_tiled(img, t_grad)
+            g = lap_norm_func(g)
+            img += g*1.0
+            print '.',
+        savearray(visstd(img))
 
