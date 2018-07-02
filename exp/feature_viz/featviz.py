@@ -94,12 +94,11 @@ if __name__=='__main__':
     f = h5py.File(input_scale_file)
     image_scale = f['scale'][()]
     image_mean = f['mean'][:]
-    image_mean = np.mean(image_mean)
 
     # load the model
     is_training = False
     with tf.device('/gpu:0'):
-        t_input = tf.placeholder(tf.float32, name='input')
+        t_input = tf.placeholder(tf.float32, shape=(1, 48, 48))
         t_preprocessed = (t_input - image_mean) * image_scale
         is_training_ph = tf.placeholder(tf.bool, shape=())
         net = sel_model.get_model(t_preprocessed, is_training=is_training_ph,
@@ -164,9 +163,9 @@ if __name__=='__main__':
     # behold the power of automatic differentiation!
     t_grad = tf.gradients(t_score, t_input)[0]
     # build the laplacian normalization graph
-    lap_norm_func = tffunc(np.float32)(partial(lap_normalize, scale_n=4))
+    #lap_norm_func = tffunc(np.float32)(partial(lap_normalize, scale_n=4))
 
-    resize = tffunc(np.float32, np.int32)(resize)
+    #resize = tffunc(np.float32, np.int32)(resize)
 
     img = img_noise.copy()
     for i in range(20):
