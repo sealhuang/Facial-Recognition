@@ -74,18 +74,18 @@ def lap_normalize(img, scale_n=4):
     out = lap_merge(tlevels)
     return out[0, :, :, :]
 
-def tffunc(*argtypes):
-    """Helper that transforms TF-graph generating function into a regular one.
-    See 'resize' function below.
-    """
-    placeholders = list(map(tf.placeholder, argtypes))
-    def wrap(f):
-        out = f(*placeholders)
-        def wrapper(*args, **kw):
-            return out.eval(dict(zip(placeholders, args)),
-                            session=kw.get('session'))
-        return wrapper
-    return wrap
+#def tffunc(*argtypes):
+#    """Helper that transforms TF-graph generating function into a regular one.
+#    See 'resize' function below.
+#    """
+#    placeholders = list(map(tf.placeholder, argtypes))
+#    def wrap(f):
+#        out = f(*placeholders)
+#        def wrapper(*args, **kw):
+#            return out.eval(dict(zip(placeholders, args)),
+#                            session=kw.get('session'))
+#        return wrapper
+#    return wrap
 
 def resize(img, size):
     """Helper function that uses TF to resize an image"""
@@ -168,22 +168,19 @@ if __name__=='__main__':
     print('Number of layers', len(layers))
     print('Total number of feature channels:', sum(feature_nums))
 
-    layer = 'conv1/Conv2D'
-    channel = 0
-
-    # start with a gray image with a little noise
-    img_noise = np.random.uniform(size=(1, 48, 48)) + 115.0
-    print 'Viz feature of Layer %s, Channel %s'%(layer, channel)
-    t_obj = graph.get_tensor_by_name('%s:0'%layer)[:, :, :, channel]
- 
-    # defining the optimization objective
-    t_score = tf.reduce_mean(t_obj)
-    # behold the power of automatic differentiation!
-    t_grad = tf.gradients(t_score, input_ph)[0]
-    # build the laplacian normalization graph
-    lap_norm_func = tffunc(np.float32)(partial(lap_normalize, scale_n=4))
-
-    resize = tffunc(np.float32, np.int32)(resize)
+    # Helper function
+    def tffunc(*argtypes):
+        """Helper that transforms TF-graph generating function into a regular
+        one.
+        """
+        placeholders = list(map(tf.placeholder, argtypes))
+        def wrap(f):
+            out = f(*placeholders)
+            def wrapper(*args, **kw):
+                return out.eval(dict(zip(placeholders, args)),
+                                session=kw.get('session'))
+            return wrapper
+        return wrap
 
     def calc_grad_tiled(img, t_grad, tile_size=512):
         """Compute the value of tensor t_grad over the image in a tiled way.
@@ -201,6 +198,23 @@ if __name__=='__main__':
                 g = sess.run(t_grad, {input_ph:sub})
                 grad[y:y+sz, x:x+sz] = g
         return np.roll(np.roll(grad, -sx, 1), -sy, 0)
+
+    layer = 'conv1/Conv2D'
+    channel = 0
+
+    # start with a gray image with a little noise
+    img_noise = np.random.uniform(size=(1, 48, 48)) + 115.0
+    print 'Viz feature of Layer %s, Channel %s'%(layer, channel)
+    t_obj = graph.get_tensor_by_name('%s:0'%layer)[:, :, :, channel]
+ 
+    # defining the optimization objective
+    t_score = tf.reduce_mean(t_obj)
+    # behold the power of automatic differentiation!
+    t_grad = tf.gradients(t_score, input_ph)[0]
+    # build the laplacian normalization graph
+    lap_norm_func = tffunc(np.float32)(partial(lap_normalize, scale_n=4))
+
+    resize = tffunc(np.float32, np.int32)(resize)
 
     img = img_noise.copy()
     for octave in range(3):
