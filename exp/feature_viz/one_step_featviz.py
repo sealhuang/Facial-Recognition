@@ -82,7 +82,7 @@ def lap_normalize(img, scale_n=4):
 def resize(img, size):
     """Helper function that uses TF to resize an image"""
     img = tf.expand_dims(tf.expand_dims(img, 0), -1)
-    return tf.image.resize_bilinear(img, size)[0, :, :, 0]
+    return tf.image.resize_bilinear(img, size)[0, :, :, :]
 
 
 if __name__=='__main__':
@@ -121,45 +121,41 @@ if __name__=='__main__':
     print('Number of layers', len(layers))
     print('Total number of feature channels:', sum(feature_nums))
 
-    # Helper function
-    def tffunc(*argtypes):
-        """Helper that transforms TF-graph generating function into a regular
-        one.
-        """
-        placeholders = list(map(tf.placeholder, argtypes))
-        def wrap(f):
-            out = f(*placeholders)
-            def wrapper(*args, **kw):
-                return out.eval(dict(zip(placeholders, args)), session=sess)
-            return wrapper
-        return wrap
+    ## Helper function
+    #def tffunc(*argtypes):
+    #    """Helper that transforms TF-graph generating function into a regular
+    #    one.
+    #    """
+    #    placeholders = list(map(tf.placeholder, argtypes))
+    #    def wrap(f):
+    #        out = f(*placeholders)
+    #        def wrapper(*args, **kw):
+    #            return out.eval(dict(zip(placeholders, args)), session=sess)
+    #        return wrapper
+    #    return wrap
 
-    def calc_grad_tiled(img, t_grad, tile_size=48):
-        """Compute the value of tensor t_grad over the image in a tiled way.
-        Random shifts are applied to the image to blur tile boundaries over
-        multiple iterations.
-        """
-        sz = tile_size
-        h, w = img.shape[:2]
-        sx, sy = np.random.randint(sz, size=2)
-        img_shift = np.roll(np.roll(img, sx, 1), sy, 0)
-        grad = np.zeros_like(img)
-        for y in range(0, max(h-sz//2, sz), sz):
-            for x in range(0, max(w-sz//2, sz), sz):
-                sub = img_shift[y:y+sz, x:x+sz]
-                g = sess.run(t_grad, {t_input: np.expand_dims(sub, 0),
-                                      is_training_ph: is_training})
-                grad[y:y+sz, x:x+sz] = g[0, :, :]
-        return np.roll(np.roll(grad, -sx, 1), -sy, 0)
-    
-    resize = tffunc(np.float32, np.int32)(resize)
+    #def calc_grad_tiled(img, t_grad, tile_size=512):
+    #    """Compute the value of tensor t_grad over the image in a tiled way.
+    #    Random shifts are applied to the image to blur tile  boundaries over
+    #    multiple iterations.
+    #    """
+    #    sz = tile_size
+    #    h, w = img.shape[:2]
+    #    sx, sy = np.random.randint(sz, size=2)
+    #    img_shift = np.roll(np.roll(img, sx, 1), sy, 0)
+    #    grad = np.zeros_like(img)
+    #    for y in range(0, max(h-sz//2, sz), sz):
+    #        for x in range(0, max(w-sz//2, sz), sz):
+    #            sub = img_shift[y:y+sz, x:x+sz]
+    #            sub = np.expand_dims(sub, 0)
+    #            g = sess.run(t_grad, {t_input:sub})
+    #            grad[y:y+sz, x:x+sz] = g[0, :, :]
+    #    return np.roll(np.roll(grad, -sx, 1), -sy, 0)
 
-    # build the laplacian normalization graph
-    lap_norm_func = tffunc(np.float32)(partial(lap_normalize, scale_n=4))
-    
     for layer in layers:
         channel_num = int(graph.get_tensor_by_name(layer+':0').get_shape()[-1])
         for channel in range(channel_num):
+
             # start with a gray image with a little noise
             img_noise = np.random.uniform(size=(48, 48)) + 115.0
             print 'Viz feature of Layer %s, Channel %s'%(layer, channel)
@@ -169,16 +165,30 @@ if __name__=='__main__':
             t_score = tf.reduce_mean(t_obj)
             # behold the power of automatic differentiation!
             t_grad = tf.gradients(t_score, t_input)[0]
+            # build the laplacian normalization graph
+            #lap_norm_func = tffunc(np.float32)(partial(lap_normalize, scale_n=4))
+
+            #resize = tffunc(np.float32, np.int32)(resize)
 
             img = img_noise.copy()
-            for octave in range(2):
-                if octave>0:
-                    hw = np.float32(img.shape[:2]) * 1.5
-                    img = resize(img, np.int32(hw))
-                for i in range(200):
-                    g = calc_grad_tiled(img, t_grad)
-                    g = lap_norm_func(g)
-                    img += g[:, :, 0]*1.0
-                    print '.',
+            for i in range(100):
+                g, score = sess.run([t_grad, t_score],
+                                    {t_input: np.expand_dims(img, 0),
+                                     is_training_ph: is_training})
+                # normalizing the gradient, so the same step size should work
+                # for different layers and networks
+                g /= g.std() + 1e-8
+                img += g[0, :, :]*1.0
+                print '.',
             savearray(visstd(img), '%s_%s'%(layer, channel))
- 
+    #for octave in range(3):
+    #    if octave>0:
+    #        hw = np.float32(img.shape[:2]) * 1.4
+    #        img = resize(img, np.int32(hw))
+    #    for i in range(10):
+    #        g = calc_grad_tiled(img, t_grad)
+    #        g = lap_norm_func(g)
+    #        img += g[:, :, 0]*1.0
+    #        print '.',
+    #    savearray(visstd(img), 'test_%s.npy'%(octave))
+
