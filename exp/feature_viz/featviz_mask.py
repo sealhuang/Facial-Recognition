@@ -5,6 +5,7 @@ import os
 os.environ['CUDA_DEVICE_ORDER'] = 'PCI_BUS_ID'
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 import numpy as np
+#from scipy.misc import imresize
 import h5py
 import matplotlib.pylab as plt
 import tensorflow as tf
@@ -14,13 +15,13 @@ sys.path.append('../cnn/')
 import model_large_promissing as sel_model
 
 
-def savearray(a, filename):
-    a = np.uint8(np.clip(a, 0, 1)*255)
-    plt.imshow(a, cmap='gray')
-    filename = filename.replace('/', '_')
-    plt.savefig(filename+'.png')
+def savearray(img, mask, filename):
+    mask[mask==0] = 0.5
+    nimg = img * mask
+    plt.imshow(nimg, cmap='gray', vmin=0, vmax=255)
+    plt.savefig(filename)
     plt.close()
-    np.save(filename+'.npy', a)
+    #np.save(filename+'.npy', mask)
 
 def visstd(a, s=0.1):
     """Normalize the image range for visualization"""
@@ -44,6 +45,7 @@ if __name__=='__main__':
     model_dir = os.path.join(base_dir,'exp','cnn','log_model_large_promissing_')
     model_data = os.path.join(model_dir, 'checkpoint_49.ckpt')
     dataset_dir = os.path.join(base_dir, 'data_hdf5')
+    feat_dir = os.path.join(base_dir, 'exp', 'feature_viz', 'features')
 
     # load preprocessing parameters for input
     input_scale_file = os.path.join(dataset_dir,'training_images_mean_scale.h5')
@@ -77,27 +79,29 @@ if __name__=='__main__':
     print('Number of layers', len(layers))
     print('Total number of feature channels:', sum(feature_nums))
 
-    for layer in layers:
-        channel_num = int(graph.get_tensor_by_name(layer+':0').get_shape()[-1])
-        for channel in range(channel_num):
+    for i in range(30):
+        # start with a selected image from testing images
+        print 'Image %s'%(i*2+1)
+        img0 = imgs[i*2+1]
+        for layer in layers:
+            channel_num = int(graph.get_tensor_by_name(layer+':0').get_shape()[-1])
+            print 'Viz feature of Layer %s'%(layer)
+            t_obj = graph.get_tensor_by_name('%s:0'%layer)
+            t_obj = tf.image.resize_bilinear(t_obj, [48, 48])[0, :, :, :]
 
-            # start with a selected image from testing images
-            img0 = np.float32(imgs[9])
-            print 'Viz feature of Layer %s, Channel %s'%(layer, channel)
-            t_obj = graph.get_tensor_by_name('%s:0'%layer)[:, :, :, channel]
- 
-            # defining the optimization objective
-            t_score = tf.reduce_mean(t_obj)
-            #t_score = tf.reduce_max(t_obj)
-            # behold the power of automatic differentiation!
-            t_grad = tf.gradients(t_score, t_input)[0]
+            img = np.float32(img0.copy())
+            t = sess.run([t_obj], {t_input: np.expand_dims(img, 0),
+                                   is_training_ph: is_training})
+            t = t[0]
+            for channel in range(channel_num):
+                tmp_t = t[:, :, channel]
+                tmp_t = (tmp_t - tmp_t.min()) / (tmp_t.max() - tmp_t.min())
+                tmp_t[tmp_t<0.6] = 0
+                tmp_t[tmp_t>0] = 1
+                l = layer.replace('/', '_')
+                out_dir = os.path.join(feat_dir, '%s_%s'%(l, channel))
+                if not os.path.exists(out_dir):
+                    os.makedirs(out_dir)
+                savearray(img0, tmp_t,os.path.join(out_dir,'img%s.png'%(i*2+1)))
 
-            img = img0.copy()
-            g, score = sess.run([t_grad, t_score],
-                                    {t_input: np.expand_dims(img, 0),
-                                     is_training_ph: is_training})
-            # normalizing the gradient, so the same step size should work
-            # for different layers and networks
-            g /= g.std() + 1e-8
-            savearray(visstd(g[0, :, :]), '%s_%s'%(layer, channel))
 
