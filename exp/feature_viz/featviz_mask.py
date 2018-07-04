@@ -61,8 +61,8 @@ if __name__=='__main__':
         t_input = tf.placeholder(tf.float32, shape=(1, 48, 48))
         t_preprocessed = (t_input - image_mean) * image_scale
         is_training_ph = tf.placeholder(tf.bool, shape=())
-        net = sel_model.get_model(t_preprocessed, is_training=is_training_ph,
-                                  cat_num=7, weight_decay=0.0, bn_decay=0.0)
+        pred = sel_model.get_model(t_preprocessed, is_training=is_training_ph,
+                                   cat_num=7, weight_decay=0.0, bn_decay=0.0)
     saver = tf.train.Saver()
     # create tensorflow session
     config = tf.ConfigProto()
@@ -83,20 +83,27 @@ if __name__=='__main__':
         # start with a selected image from testing images
         print 'Image %s'%(i*2+1)
         img0 = imgs[i*2+1]
+        # get predicted label
+        img = np.float32(img0.copy())
+        pred_label = sess.run(pred, {t_input: np.expand_dims(img, 0),
+                                     is_training_ph: is_training})
+        print 'Predicted label: %s'%(pred_label)
+        print 'Ground-truth label: %s'%(labels[i*2+1])
+        if not pred_label==labels[i*2+1]:
+            continue
         for layer in layers:
             channel_num = int(graph.get_tensor_by_name(layer+':0').get_shape()[-1])
             print 'Viz feature of Layer %s'%(layer)
             t_obj = graph.get_tensor_by_name('%s:0'%layer)
             t_obj = tf.image.resize_bilinear(t_obj, [48, 48])[0, :, :, :]
 
-            img = np.float32(img0.copy())
             t = sess.run([t_obj], {t_input: np.expand_dims(img, 0),
                                    is_training_ph: is_training})
             t = t[0]
             for channel in range(channel_num):
                 tmp_t = t[:, :, channel]
                 tmp_t = (tmp_t - tmp_t.min()) / (tmp_t.max() - tmp_t.min())
-                tmp_t[tmp_t<0.6] = 0
+                tmp_t[tmp_t<0.8] = 0
                 tmp_t[tmp_t>0] = 1
                 l = layer.replace('/', '_')
                 out_dir = os.path.join(feat_dir, '%s_%s'%(l, channel))
